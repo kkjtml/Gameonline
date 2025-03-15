@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 public class LoginManagerScipt : MonoBehaviour
 {
+    public static LoginManagerScipt Instance { get; private set; }  // Singleton instance
     public TMP_InputField userNameInputField;
     // public TMP_InputField CoderoomInputField;
     public TMP_Dropdown characterSelect;
@@ -27,14 +28,29 @@ public class LoginManagerScipt : MonoBehaviour
     public TMP_InputField joinCodeInputField;
     public string joinCode;
 
+    public TMP_Text joinCodeDisplayText;
+
+    private void Awake()
+    {
+        // Ensure that there is only one instance of LoginManagerScipt
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);  // Destroy this instance if another one already exists
+        }
+    }
     public void Start()
     {
         NetworkManager.Singleton.OnServerStarted += HandleServerStarted;
         NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += HanddleClientDisconnect;
-        // loginPanel.SetActive(true);
-        // leaveButton.SetActive(false);
+
         SetUIVisable(false);
+        joinCodeDisplayText.gameObject.SetActive(true);
+        joinCodeInputField.gameObject.SetActive(false);
     }
 
     private void SetUIVisable(bool isUserLogin)
@@ -50,6 +66,9 @@ public class LoginManagerScipt : MonoBehaviour
             loginPanel.SetActive(true);
             leaveButton.SetActive(true);
             scorePanel.SetActive(false);
+
+            joinCodeDisplayText.gameObject.SetActive(true); 
+            joinCodeInputField.gameObject.SetActive(false);
         }
     }
 
@@ -116,6 +135,10 @@ public class LoginManagerScipt : MonoBehaviour
         {
             await RelayManagerScript.Instance.CreateRelay();
         }
+
+        joinCodeDisplayText.gameObject.SetActive(true);
+        joinCodeInputField.gameObject.SetActive(false);
+
         NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
         NetworkManager.Singleton.StartHost();
         Debug.Log("Start Host");
@@ -123,6 +146,9 @@ public class LoginManagerScipt : MonoBehaviour
 
     public async void Client()
     {
+        joinCodeDisplayText.gameObject.SetActive(true);
+        joinCodeInputField.gameObject.SetActive(true);
+
         // setIpAddress();
         joinCode = joinCodeInputField.GetComponent<TMP_InputField>().text;
         if (RelayManagerScript.Instance.IsRelayEnabled && !string.IsNullOrEmpty(joinCode))
@@ -281,5 +307,13 @@ public class LoginManagerScipt : MonoBehaviour
             return 4;
         }
         return 0;
+    }
+
+    public void UpdateJoinCodeDisplay(string joinCode)
+    {
+        if (joinCodeDisplayText != null)
+        {
+            joinCodeDisplayText.text = joinCode;
+        }
     }
 }
