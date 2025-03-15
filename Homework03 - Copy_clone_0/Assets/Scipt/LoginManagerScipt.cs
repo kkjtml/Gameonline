@@ -146,7 +146,7 @@ public class LoginManagerScipt : MonoBehaviour
 
     public async void Client()
     {
-        joinCodeDisplayText.gameObject.SetActive(true);
+        joinCodeDisplayText.gameObject.SetActive(false);
         joinCodeInputField.gameObject.SetActive(true);
 
         // setIpAddress();
