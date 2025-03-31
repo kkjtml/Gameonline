@@ -4,22 +4,29 @@ using UnityEngine;
 using QFSW.QC;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
+using UnityEngine.UI;
+using TMPro;
 
 public class LobbyManagerScript : MonoBehaviour
 {
     Lobby hostLobby;
     private string playerName;
+    public Button listLobbiesButton; // ปุ่มกดเพื่อเรียกดู Lobby
+    public GameObject lobbyEntryPrefab; // Prefab ที่ใช้แสดงรายการ Lobby
+    public Transform lobbiesContent; // Content ของ Scroll View
     private void Start()
     {
         playerName = "myName " + Random.Range(1, 999);
         Debug.Log("Player name : " + playerName);
+        listLobbiesButton.onClick.AddListener(() => ListLobbies());
     }
-    
+
     [Command]
     public async void CreateLobby()
     {
-        try{
-            string lobbyName = "MyLobby " + Random.Range(1, 999);;
+        try
+        {
+            string lobbyName = "MyLobby " + Random.Range(1, 999); ;
             int maxPlayer = 5;
             CreateLobbyOptions createLobbyOptions = new CreateLobbyOptions
             {
@@ -42,19 +49,20 @@ public class LobbyManagerScript : MonoBehaviour
             StartCoroutine(HeartbeatLobbyCoroutine(hostLobby.Id, 15));
             Debug.Log("Created Lobby : " + lobby.Name + " , " + lobby.MaxPlayers + " , " + lobby.Id + " , " + lobby.LobbyCode);
             PrintPlayers(hostLobby);
-        }catch (LobbyServiceException e)
-        {Debug.Log(e);}
+        }
+        catch (LobbyServiceException e)
+        { Debug.Log(e); }
     }
-    
+
     private void PrintPlayers(Lobby lobby)
     {
         Debug.Log("Players in Lobby : " + lobby.Name + " : " + lobby.Data["GameMode"].Value);
-        foreach(Player player in lobby.Players)
+        foreach (Player player in lobby.Players)
         {
             Debug.Log(player.Id + " : " + player.Data["PlayerName"].Value);
         }
     }
-    
+
     [Command]
     private async void JoinLobby()
     {
@@ -64,9 +72,10 @@ public class LobbyManagerScript : MonoBehaviour
             await Lobbies.Instance.JoinLobbyByIdAsync(queryResponse.Results[0].Id);
             Debug.Log("Joined Lobby : " + queryResponse.Results[0].Name + "," +
                       queryResponse.Results[0].AvailableSlots);
-        }catch (LobbyServiceException e) { Debug.Log(e); }
+        }
+        catch (LobbyServiceException e) { Debug.Log(e); }
     }
-    
+
     [Command]
     public async void JoinLobbyByCode(string lobbyCode)
     {
@@ -89,17 +98,21 @@ public class LobbyManagerScript : MonoBehaviour
         }
         catch (LobbyServiceException e) { Debug.Log(e); }
     }
-    
+
     [Command]
-    public async void QuickJoinLobby(){
-        try{
-            Lobby lobby =  await Lobbies.Instance.QuickJoinLobbyAsync();
+    public async void QuickJoinLobby()
+    {
+        try
+        {
+            Lobby lobby = await Lobbies.Instance.QuickJoinLobbyAsync();
             Debug.Log(lobby.Name + "," + lobby.AvailableSlots);
-        }catch (LobbyServiceException e){ 
+        }
+        catch (LobbyServiceException e)
+        {
             Debug.Log(e);
         }
     }
-    
+
     private static IEnumerator HeartbeatLobbyCoroutine(string lobbyId, float waitTimeSeconds)
     {
         var delay = new WaitForSecondsRealtime(waitTimeSeconds);
@@ -109,7 +122,7 @@ public class LobbyManagerScript : MonoBehaviour
             yield return delay;
         }
     }
-    
+
     [Command]
     private async void ListLobbies()
     {
@@ -131,13 +144,27 @@ public class LobbyManagerScript : MonoBehaviour
                     field: QueryOrder.FieldOptions.Created)
             };
             QueryResponse queryResponse = await LobbyService.Instance.QueryLobbiesAsync(options);
-            Debug.Log("Lobbies found : " + queryResponse.Results.Count);
-            foreach(Lobby lobby in queryResponse.Results)
+            // ลบรายการเก่าทั้งหมดก่อนแสดงผลใหม่
+            foreach (Transform child in lobbiesContent)
             {
-                Debug.Log(lobby.Name + " , " + lobby.MaxPlayers + " , " + lobby.Data["GameMode"].Value);
+                Destroy(child.gameObject);
+            }
+
+            Debug.Log("Lobbies found : " + queryResponse.Results.Count);
+            foreach (Lobby lobby in queryResponse.Results)
+            {
+                GameObject newEntry = Instantiate(lobbyEntryPrefab, lobbiesContent);
+                TextMeshProUGUI entryText = newEntry.GetComponentInChildren<TextMeshProUGUI>();
+
+                if (entryText != null)
+                {
+                    entryText.text = $"{lobby.Name} - {lobby.Players.Count}/{lobby.MaxPlayers} - {lobby.Data["GameMode"].Value}";
+                }
             }
         }
         catch (LobbyServiceException e)
-        { Debug.Log(e); }
+        {
+            Debug.Log(e);
+        }
     }
 }

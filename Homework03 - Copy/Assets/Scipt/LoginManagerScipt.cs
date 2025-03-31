@@ -49,8 +49,10 @@ public class LoginManagerScipt : MonoBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback += HanddleClientDisconnect;
 
         SetUIVisable(false);
-        joinCodeDisplayText.gameObject.SetActive(true);
-        joinCodeInputField.gameObject.SetActive(false);
+        // joinCodeDisplayText.gameObject.SetActive(true);
+        // joinCodeInputField.gameObject.SetActive(false);
+        joinCodeDisplayText.gameObject.SetActive(false);
+        joinCodeInputField.gameObject.SetActive(true);
     }
 
     private void SetUIVisable(bool isUserLogin)
@@ -67,8 +69,10 @@ public class LoginManagerScipt : MonoBehaviour
             leaveButton.SetActive(true);
             scorePanel.SetActive(false);
 
-            joinCodeDisplayText.gameObject.SetActive(true); 
-            joinCodeInputField.gameObject.SetActive(false);
+            // joinCodeDisplayText.gameObject.SetActive(true);
+            // joinCodeInputField.gameObject.SetActive(false);
+            joinCodeDisplayText.gameObject.SetActive(false);
+            joinCodeInputField.gameObject.SetActive(true);
         }
     }
 
@@ -136,8 +140,10 @@ public class LoginManagerScipt : MonoBehaviour
             await RelayManagerScript.Instance.CreateRelay();
         }
 
-        joinCodeDisplayText.gameObject.SetActive(true);
-        joinCodeInputField.gameObject.SetActive(false);
+        // joinCodeDisplayText.gameObject.SetActive(true);
+        // joinCodeInputField.gameObject.SetActive(false);
+        joinCodeDisplayText.gameObject.SetActive(false);
+        joinCodeInputField.gameObject.SetActive(true);
 
         NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
         NetworkManager.Singleton.StartHost();
@@ -146,6 +152,8 @@ public class LoginManagerScipt : MonoBehaviour
 
     public async void Client()
     {
+        // joinCodeDisplayText.gameObject.SetActive(false);
+        // joinCodeInputField.gameObject.SetActive(true);
         joinCodeDisplayText.gameObject.SetActive(false);
         joinCodeInputField.gameObject.SetActive(true);
 

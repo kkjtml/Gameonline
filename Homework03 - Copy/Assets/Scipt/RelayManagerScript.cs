@@ -41,8 +41,8 @@ public class RelayManagerScript : Singleton<RelayManagerScript>
             Allocation allocation = await RelayService.Instance.CreateAllocationAsync(2);
             string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
             Debug.Log("Join code = " + joinCode);
-            LoginManagerScipt.Instance.UpdateJoinCodeDisplay(joinCode); //อัพเดตโค้ดผ่าน UI ของ Host
-            LoginManagerScipt.Instance.joinCodeDisplayText.gameObject.SetActive(true);
+            // LoginManagerScipt.Instance.UpdateJoinCodeDisplay(joinCode); //อัพเดตโค้ดผ่าน UI ของ Host
+            // LoginManagerScipt.Instance.joinCodeDisplayText.gameObject.SetActive(true);
             RelayServerData relayServerData = new RelayServerData(allocation, "dtls");
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
             //NetworkManager.Singleton.StartHost();
