@@ -38,6 +38,8 @@ public class MainPlayerMovement : NetworkBehaviour
 
     private LoginManagerScipt loginManager;
 
+    private QuickJoinLobbyScript quickJoinLobby;
+
     public struct NetworkString : INetworkSerializable
     {
         public FixedString32Bytes info;
@@ -105,6 +107,7 @@ public class MainPlayerMovement : NetworkBehaviour
         if (IsOwner)
         {
             loginManager = GameObject.FindObjectOfType<LoginManagerScipt>();
+            quickJoinLobby = GameObject.FindObjectOfType<QuickJoinLobbyScript>();
             if (loginManager != null)
             {
                 string name = loginManager.userNameInputField.text;
@@ -115,6 +118,12 @@ public class MainPlayerMovement : NetworkBehaviour
                     SetPlayerNameServerRpc(name, false); // ให้ Server อัปเดต playerNameB
 
                 UpdateEyeTexture(eyeTextureStatus.Value);
+            }
+            else if (quickJoinLobby != null)
+            {
+                string name = quickJoinLobby.userNameInput.text;
+                if (IsOwnedByServer) { playerNameA.Value = name; }
+                else { playerNameB.Value = name; }
             }
         }
     }
