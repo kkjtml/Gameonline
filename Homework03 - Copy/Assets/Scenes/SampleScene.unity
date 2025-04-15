@@ -7190,6 +7190,8 @@ MonoBehaviour:
   lobbiesContent: {fileID: 854329885}
   panelMain: {fileID: 1486401685}
   panelRoom: {fileID: 1577457583}
+  playerEntryPrefab: {fileID: 8270705339161013581, guid: 04b10b8ba05002647962eda791218f30, type: 3}
+  contentParent: {fileID: 1361351775}
 --- !u!4 &1359816025
 Transform:
   m_ObjectHideFlags: 0

@@ -31,6 +31,10 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
     private RelayServerData storedRelayServerData;
     private bool isJoining;
 
+    //InLobby
+    public GameObject playerEntryPrefab; // Prefab สำหรับชื่อผู้เล่น
+    public Transform contentParent;      // ScrollView → Content
+
     private void Start()
     {
         playerName = "myName " + Random.Range(1, 999);
@@ -50,10 +54,12 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
             lobbyUpdateTimer -= Time.deltaTime;
             if (lobbyUpdateTimer <= 0f)
             {
-                float lobbyUpdateTimerMax = 1.1f;
-                lobbyUpdateTimer = lobbyUpdateTimerMax;
-                Lobby lobby = await LobbyService.Instance.GetLobbyAsync(joinedLobby.Id);
-                joinedLobby = lobby;
+                lobbyUpdateTimer = 1.5f;
+
+                Lobby updated = await LobbyService.Instance.GetLobbyAsync(joinedLobby.Id);
+                joinedLobby = updated;
+
+                ShowPlayersInLobby(joinedLobby); // ✅ อัปเดตรายชื่ออัตโนมัติ
             }
         }
     }
@@ -114,7 +120,10 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
         catch (LobbyServiceException e)
         {
             Debug.LogError("CreateLobby failed: " + e);
-        }
+        }   
+
+        joinedLobby = hostLobby;
+        ShowPlayersInLobby(hostLobby);
     }
 
     public void PrintPlayers(Lobby lobby)
@@ -364,13 +373,14 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
             JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
             RelayServerData relayServerData = new RelayServerData(joinAllocation, "dtls");
 
-            UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-            transport.SetRelayServerData(relayServerData);
-
-            NetworkManager.Singleton.StartClient(); // ✅ เริ่มเป็น Client
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
+            NetworkManager.Singleton.StartClient();
 
             panelMain.SetActive(false);
             panelRoom.SetActive(true);
+
+            joinedLobby = joined;
+            ShowPlayersInLobby(joined);
         }
         catch (LobbyServiceException e)
         {
@@ -379,4 +389,30 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
 
         isJoining = false;
     }
+
+    public void ShowPlayersInLobby(Lobby lobby)
+    {
+        // 🔄 เคลียร์รายการเก่า
+        foreach (Transform child in contentParent)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // 🔁 สร้างรายการใหม่จาก lobby.Players
+        foreach (Player player in lobby.Players)
+        {
+            GameObject entry = Instantiate(playerEntryPrefab, contentParent);
+
+            TextMeshProUGUI nameText = entry.GetComponentInChildren<TextMeshProUGUI>();
+            if (nameText != null && player.Data != null && player.Data.ContainsKey("PlayerName"))
+            {
+                nameText.text = player.Data["PlayerName"].Value;
+            }
+            else if (nameText != null)
+            {
+                nameText.text = $"Unknown Player ({player.Id})";
+            }
+        }
+    }
+
 }
