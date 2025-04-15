@@ -7,6 +7,11 @@ using Unity.Services.Lobbies.Models;
 using UnityEngine.UI;
 using TMPro;
 using Unity.Services.Authentication;
+using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport.Relay;
 
 public class LobbyManagerScript : Singleton<LobbyManagerScript>
 {
@@ -19,6 +24,9 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
     public Transform lobbiesContent; // Content ของ Scroll View
                                      // public TMP_InputField joinCodeInputField; // ช่องใส่รหัส
                                      // public Button joinByCodeButton; // ปุ่มกด Join Lobby
+    
+    public GameObject panelMain;
+    public GameObject panelRoom;
 
     private void Start()
     {
@@ -52,8 +60,14 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
     {
         try
         {
-            string lobbyName = "MyLobby " + Random.Range(1, 999); ;
+            string lobbyName = "MyLobby " + Random.Range(1, 999);
             int maxPlayer = 5;
+
+            // ✅ ขอ Allocation จาก Relay
+            Allocation allocation = await RelayService.Instance.CreateAllocationAsync(maxPlayer);
+            string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+
+            // ✅ ใส่ข้อมูล Player + Relay Join Code เข้าไปใน Lobby
             CreateLobbyOptions createLobbyOptions = new CreateLobbyOptions
             {
                 IsPrivate = false,
@@ -62,42 +76,55 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
                     Data = new Dictionary<string, PlayerDataObject>
                     {
                         {"PlayerName",
-                            new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member,playerName)}
+                            new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName)}
                     }
                 },
                 Data = new Dictionary<string, DataObject>
                 {
-                    {"GameMode", new DataObject(DataObject.VisibilityOptions.Public, "DeathMatch") }
+                    {"GameMode", new DataObject(DataObject.VisibilityOptions.Public, "DeathMatch") },
+                    {"JoinCodeKey", new DataObject(DataObject.VisibilityOptions.Public, joinCode) }
                 }
             };
+
             Lobby lobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayer, createLobbyOptions);
             hostLobby = lobby;
             joinedLobby = hostLobby;
+
             StartCoroutine(HeartbeatLobbyCoroutine(hostLobby.Id, 15));
-            Debug.Log("Created Lobby : " + lobby.Name + " , " + lobby.MaxPlayers + " , " + lobby.Id + " , " + lobby.LobbyCode);
+
+            // ✅ ตั้งค่า Relay Server ให้กับ NetworkManager
+            RelayServerData relayServerData = new RelayServerData(allocation, "dtls");
+            NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>()
+                .SetRelayServerData(relayServerData);
+
+            NetworkManager.Singleton.StartHost();  // เริ่ม Host เกม
+            Debug.Log("Join Code = " + joinCode);
+
             PrintPlayers(hostLobby);
+
+            // ✅ สลับ Panel
+            panelMain.SetActive(false);
+            panelRoom.SetActive(true);
         }
         catch (LobbyServiceException e)
-        { Debug.Log(e); }
+        {
+            Debug.LogError("CreateLobby failed: " + e);
+        }
     }
 
     public void PrintPlayers(Lobby lobby)
     {
-        // Debug.Log("Players in Lobby : " + lobby.Name + " : " + lobby.Data["GameMode"].Value);
-        Debug.Log("Players in Lobby : " + lobby.Name + " : " + lobby.Data["JoinCodeKey"].Value);
-        foreach (Player player in lobby.Players)
+        Debug.Log("Players in Lobby: " + lobby.Name);
+        foreach (var player in lobby.Players)
         {
-            Debug.Log(player.Id + " : " + player.Data["PlayerName"].Value);
+            if (player.Data != null && player.Data.ContainsKey("PlayerName"))
+            {
+                Debug.Log(player.Id + " : " + player.Data["PlayerName"].Value);
+            }
         }
     }
 
-    [Command]
-    private void PrintPlayers()
-    {
-        PrintPlayers(joinedLobby);
-    }
-
-    [Command]
+    [Command]   
     private async void JoinLobby()
     {
         try
