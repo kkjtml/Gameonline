@@ -12,6 +12,7 @@ using Unity.Services.Relay.Models;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Networking.Transport.Relay;
+using Unity.Services.Lobbies.Models;
 
 public class LobbyManagerScript : Singleton<LobbyManagerScript>
 {
@@ -27,6 +28,8 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
     
     public GameObject panelMain;
     public GameObject panelRoom;
+    private RelayServerData storedRelayServerData;
+    private bool isJoining;
 
     private void Start()
     {
@@ -97,7 +100,7 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
             NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>()
                 .SetRelayServerData(relayServerData);
 
-            NetworkManager.Singleton.StartHost();  // เริ่ม Host เกม
+            //NetworkManager.Singleton.StartHost();  // เริ่ม Host เกม
             Debug.Log("Join Code = " + joinCode);
 
             PrintPlayers(hostLobby);
@@ -105,6 +108,8 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
             // ✅ สลับ Panel
             panelMain.SetActive(false);
             panelRoom.SetActive(true);
+
+            storedRelayServerData = new RelayServerData(allocation, "dtls");
         }
         catch (LobbyServiceException e)
         {
@@ -185,48 +190,64 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
         }
     }
 
-    [Command]
+   [Command]
     private async void ListLobbies()
     {
         try
         {
-            QueryLobbiesOptions options = new QueryLobbiesOptions();
-            options.Count = 25;
-            // Filter for open lobbies only
-            options.Filters = new List<QueryFilter>(){
-                new QueryFilter(
-                    field: QueryFilter.FieldOptions.AvailableSlots,
-                    op: QueryFilter.OpOptions.GT,
-                    value: "0")
+            QueryLobbiesOptions options = new QueryLobbiesOptions
+            {
+                Count = 25,
+                Filters = new List<QueryFilter>
+                {
+                    new QueryFilter(QueryFilter.FieldOptions.AvailableSlots, "0", QueryFilter.OpOptions.GT)
+                },
+                Order = new List<QueryOrder>
+                {
+                    new QueryOrder(false, QueryOrder.FieldOptions.Created)
+                }
             };
-            // Order by newest lobbies first
-            options.Order = new List<QueryOrder>(){
-                new QueryOrder(
-                    asc: false,
-                    field: QueryOrder.FieldOptions.Created)
-            };
+
             QueryResponse queryResponse = await LobbyService.Instance.QueryLobbiesAsync(options);
-            // ลบรายการเก่าทั้งหมดก่อนแสดงผลใหม่
+
+            // 🔄 เคลียร์รายการเก่า
             foreach (Transform child in lobbiesContent)
             {
                 Destroy(child.gameObject);
             }
 
-            Debug.Log("Lobbies found : " + queryResponse.Results.Count);
+            Debug.Log("Lobbies found: " + queryResponse.Results.Count);
+
             foreach (Lobby lobby in queryResponse.Results)
             {
                 GameObject newEntry = Instantiate(lobbyEntryPrefab, lobbiesContent);
-                TextMeshProUGUI entryText = newEntry.GetComponentInChildren<TextMeshProUGUI>();
 
-                if (entryText != null)
+                // ✅ เปลี่ยนชื่อห้องใน Text
+                TextMeshProUGUI[] texts = newEntry.GetComponentsInChildren<TextMeshProUGUI>();
+                foreach (TextMeshProUGUI txt in texts)
                 {
-                    entryText.text = $"{lobby.Name} - {lobby.Players.Count}/{lobby.MaxPlayers} - {lobby.Data["GameMode"].Value}";
+                    if (txt.text == "New Text") // 🧠 ถ้าข้อความเริ่มต้นเป็น "New Text"
+                    {
+                        txt.text = $"{lobby.Name} - {lobby.Players.Count}/{lobby.MaxPlayers} - {lobby.Data["GameMode"].Value}";
+                        break;
+                    }
+                }
+
+                // ✅ เรียกใช้ LobbyItem (จาก child)
+                LobbyItem lobbyItem = newEntry.GetComponentInChildren<LobbyItem>();
+                if (lobbyItem != null)
+                {
+                    lobbyItem.Initialise(this, lobby);
+                }
+                else
+                {
+                    Debug.LogError("❌ LobbyItem missing on lobbyEntryPrefab!");
                 }
             }
         }
         catch (LobbyServiceException e)
         {
-            Debug.Log(e);
+            Debug.LogError(e);
         }
     }
 
@@ -327,5 +348,35 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
         {
             Debug.Log(e);
         }
+    }
+
+
+    public async void JoinAsync(Lobby lobby)
+    {
+        if (isJoining) return;
+        isJoining = true;
+
+        try
+        {
+            Lobby joined = await Lobbies.Instance.JoinLobbyByIdAsync(lobby.Id);
+            string joinCode = joined.Data["JoinCodeKey"].Value;
+
+            JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+            RelayServerData relayServerData = new RelayServerData(joinAllocation, "dtls");
+
+            UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+            transport.SetRelayServerData(relayServerData);
+
+            NetworkManager.Singleton.StartClient(); // ✅ เริ่มเป็น Client
+
+            panelMain.SetActive(false);
+            panelRoom.SetActive(true);
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError(e);
+        }
+
+        isJoining = false;
     }
 }
