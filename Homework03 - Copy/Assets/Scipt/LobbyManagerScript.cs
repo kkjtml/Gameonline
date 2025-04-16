@@ -30,6 +30,10 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
     public GameObject panelRoom;
     private RelayServerData storedRelayServerData;
     private bool isJoining;
+    private string currentJoinCode; // 🔒 เก็บ joinCode ไว้ใช้ตอน host start / client join
+
+    public TMP_Text Joincodeformhost;
+    public TMP_InputField joinCodeInputField;
 
     //InLobby
     public GameObject playerEntryPrefab; // Prefab สำหรับชื่อผู้เล่น
@@ -70,61 +74,67 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
         try
         {
             string lobbyName = "MyLobby " + Random.Range(1, 999);
-            int maxPlayer = 5;
+            int maxPlayers = 5;
 
-            // ✅ ขอ Allocation จาก Relay
-            Allocation allocation = await RelayService.Instance.CreateAllocationAsync(maxPlayer);
-            string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+            // ✅ ดึงชื่อจาก input field
+            if (LoginManagerScipt.Instance != null && LoginManagerScipt.Instance.userNameInputField != null)
+            {
+                playerName = LoginManagerScipt.Instance.userNameInputField.text;
+            }
 
-            // ✅ ใส่ข้อมูล Player + Relay Join Code เข้าไปใน Lobby
-            CreateLobbyOptions createLobbyOptions = new CreateLobbyOptions
+            // ✅ สร้าง Relay Allocation และรับ Relay Join Code
+            Allocation allocation = await RelayService.Instance.CreateAllocationAsync(maxPlayers);
+            string relayJoinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+
+            // ✅ สร้าง Lobby และแนบ Relay Join Code ลงไป
+            CreateLobbyOptions options = new CreateLobbyOptions
             {
                 IsPrivate = false,
                 Player = new Player
                 {
                     Data = new Dictionary<string, PlayerDataObject>
                     {
-                        {"PlayerName",
-                            new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName)}
+                        { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
                     }
                 },
                 Data = new Dictionary<string, DataObject>
                 {
-                    {"GameMode", new DataObject(DataObject.VisibilityOptions.Public, "DeathMatch") },
-                    {"JoinCodeKey", new DataObject(DataObject.VisibilityOptions.Public, joinCode) }
+                    { "JoinCodeKey", new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode) }
                 }
             };
 
-            Lobby lobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayer, createLobbyOptions);
+            Lobby lobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, options);
             hostLobby = lobby;
             joinedLobby = hostLobby;
 
-            StartCoroutine(HeartbeatLobbyCoroutine(hostLobby.Id, 15));
+            string lobbyCode = lobby.LobbyCode; // << สำคัญ! ใช้ตัวนี้ให้ client join
 
-            // ✅ ตั้งค่า Relay Server ให้กับ NetworkManager
-            RelayServerData relayServerData = new RelayServerData(allocation, "dtls");
-            NetworkManager.Singleton.GetComponent<Unity.Netcode.Transports.UTP.UnityTransport>()
-                .SetRelayServerData(relayServerData);
 
-            //NetworkManager.Singleton.StartHost();  // เริ่ม Host เกม
-            Debug.Log("Join Code = " + joinCode);
+            if (Joincodeformhost != null)
+            {
+                Joincodeformhost.text = $"LobbyCode: {lobbyCode}";
+                Joincodeformhost.gameObject.SetActive(true);
+            }
 
-            PrintPlayers(hostLobby);
+            // ✅ ตั้งค่า Relay ให้ NetworkManager
+            RelayServerData relayData = new RelayServerData(allocation, "dtls");
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayData);
 
-            // ✅ สลับ Panel
+            //NetworkManager.Singleton.StartHost();
+
             panelMain.SetActive(false);
             panelRoom.SetActive(true);
-
-            storedRelayServerData = new RelayServerData(allocation, "dtls");
+            ShowPlayersInLobby(hostLobby);
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError("CreateLobby failed: " + e);
-        }   
-
-        joinedLobby = hostLobby;
-        ShowPlayersInLobby(hostLobby);
+            Debug.LogError("❌ CreateLobby failed: " + e);
+        }
     }
+
+
+
+
 
     public void PrintPlayers(Lobby lobby)
     {
@@ -138,42 +148,70 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
         }
     }
 
-    [Command]   
-    private async void JoinLobby()
-    {
-        try
-        {
-            QueryResponse queryResponse = await LobbyService.Instance.QueryLobbiesAsync();
-            await Lobbies.Instance.JoinLobbyByIdAsync(queryResponse.Results[0].Id);
-            Debug.Log("Joined Lobby : " + queryResponse.Results[0].Name + "," +
-                      queryResponse.Results[0].AvailableSlots);
-        }
-        catch (LobbyServiceException e) { Debug.Log(e); }
-    }
-
     [Command]
-    public async void JoinLobbyByCode(string lobbyCode)
+    public async void JoinLobbyByCode()
     {
+        if (isJoining) return;
+        isJoining = true;
+
         try
         {
-            JoinLobbyByCodeOptions joinLobbyByCodeOptions = new JoinLobbyByCodeOptions
+            if (LoginManagerScipt.Instance != null && LoginManagerScipt.Instance.userNameInputField != null)
+            {
+                playerName = LoginManagerScipt.Instance.userNameInputField.text;
+            }
+
+            string inputLobbyCode = joinCodeInputField.text.Trim();
+            Debug.Log($"🎯 Trying to join lobby: {inputLobbyCode}");
+
+            // ✅ Join ผ่าน LobbyCode
+            JoinLobbyByCodeOptions joinOptions = new JoinLobbyByCodeOptions
             {
                 Player = new Player
                 {
                     Data = new Dictionary<string, PlayerDataObject>
                     {
-                        {"PlayerName",
-                            new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member,playerName)}
+                        { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
                     }
                 }
             };
-            Lobby lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode, joinLobbyByCodeOptions);
-            joinedLobby = lobby;
-            Debug.Log("Joined Lobby with code : " + lobbyCode);
-            PrintPlayers(joinedLobby);
+
+            Lobby joined = await Lobbies.Instance.JoinLobbyByCodeAsync(inputLobbyCode, joinOptions);
+            joinedLobby = joined;
+
+            if (!joined.Data.ContainsKey("JoinCodeKey"))
+            {
+                Debug.LogError("❌ Relay Join Code (JoinCodeKey) ไม่พบใน Lobby Data");
+                return;
+            }
+
+            string relayCode = joined.Data["JoinCodeKey"].Value;
+            Debug.Log($"✅ Relay Join Code: {relayCode}");
+
+            // ✅ Join Relay
+            JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(relayCode);
+            RelayServerData relayData = new RelayServerData(joinAllocation, "dtls");
+
+            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayData);
+            NetworkManager.Singleton.StartClient();
+
+            panelMain.SetActive(false);
+            panelRoom.SetActive(true);
+            ShowPlayersInLobby(joined);
         }
-        catch (LobbyServiceException e) { Debug.Log(e); }
+        catch (RelayServiceException e)
+        {
+            Debug.LogError("❌ Relay Join Failed: " + e.Message);
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.LogError("❌ Lobby Join Failed: " + e.Message);
+        }
+
+        isJoining = false;
     }
+
+
 
     [Command]
     public async void QuickJoinLobby()
@@ -367,28 +405,62 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
 
         try
         {
-            Lobby joined = await Lobbies.Instance.JoinLobbyByIdAsync(lobby.Id);
-            string joinCode = joined.Data["JoinCodeKey"].Value;
+            // 🧠 ดึงชื่อจาก InputField ฝั่ง Client ก่อน Join
+            if (LoginManagerScipt.Instance != null && LoginManagerScipt.Instance.userNameInputField != null)
+            {
+                playerName = LoginManagerScipt.Instance.userNameInputField.text;
+            }
 
+            // ✅ Join Lobby และเก็บ Lobby ที่ได้
+            JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
+            {
+                Player = new Player
+                {
+                    Data = new Dictionary<string, PlayerDataObject>
+                    {
+                        { "PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
+                    }
+                }
+            };
+            Lobby joined = await Lobbies.Instance.JoinLobbyByIdAsync(lobby.Id, options);
+            joinedLobby = joined;
+
+            // ✅ ตรวจสอบว่า Lobby มี JoinCode สำหรับ Relay
+            if (!joined.Data.ContainsKey("JoinCodeKey"))
+            {
+                Debug.LogError("❌ JoinCodeKey not found in lobby data.");
+                return;
+            }
+
+            string joinCode = joined.Data["JoinCodeKey"].Value;
+            Debug.Log("✅ Trying to join with code: " + joinCode);
+
+            // ✅ เชื่อมต่อ Relay ด้วย JoinCode
             JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
             RelayServerData relayServerData = new RelayServerData(joinAllocation, "dtls");
 
-            NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
+            UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+            transport.SetRelayServerData(relayServerData);
+
             NetworkManager.Singleton.StartClient();
 
             panelMain.SetActive(false);
             panelRoom.SetActive(true);
 
-            joinedLobby = joined;
             ShowPlayersInLobby(joined);
+        }
+        catch (RelayServiceException e)
+        {
+            Debug.LogError("❌ Relay Join Failed: " + e.Message);
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError(e);
+            Debug.LogError("❌ Lobby Join Failed: " + e.Message);
         }
 
         isJoining = false;
     }
+
 
     public void ShowPlayersInLobby(Lobby lobby)
     {
