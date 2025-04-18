@@ -43,7 +43,7 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
     {
         playerName = "myName " + Random.Range(1, 999);
         Debug.Log("Player name : " + playerName);
-        listLobbiesButton.onClick.AddListener(() => ListLobbies());
+        //listLobbiesButton.onClick.AddListener(() => ListLobbies());
     }
 
     private void Update()
@@ -99,7 +99,8 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
                 },
                 Data = new Dictionary<string, DataObject>
                 {
-                    { "JoinCodeKey", new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode) }
+                    { "JoinCodeKey", new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode) },
+                    { "GameMode", new DataObject(DataObject.VisibilityOptions.Public, "DeathMatch") }
                 }
             };
 
@@ -120,7 +121,7 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
             RelayServerData relayData = new RelayServerData(allocation, "dtls");
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayData);
 
-            //NetworkManager.Singleton.StartHost();
+            NetworkManager.Singleton.StartHost();
 
             panelMain.SetActive(false);
             panelRoom.SetActive(true);
@@ -131,10 +132,6 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
             Debug.LogError("❌ CreateLobby failed: " + e);
         }
     }
-
-
-
-
 
     public void PrintPlayers(Lobby lobby)
     {
@@ -226,7 +223,6 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
             Debug.Log(e);
         }
     }
-
     private static IEnumerator HeartbeatLobbyCoroutine(string lobbyId, float waitTimeSeconds)
     {
         var delay = new WaitForSecondsRealtime(waitTimeSeconds);
@@ -237,7 +233,7 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
         }
     }
 
-   [Command]
+   /*[Command]
     private async void ListLobbies()
     {
         try
@@ -296,7 +292,7 @@ public class LobbyManagerScript : Singleton<LobbyManagerScript>
         {
             Debug.LogError(e);
         }
-    }
+    }*/
 
     [Command]
     private async void UpdateLobbyGameMode(string gameMode)

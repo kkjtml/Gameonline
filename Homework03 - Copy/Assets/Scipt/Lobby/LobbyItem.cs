@@ -4,20 +4,20 @@ using Unity.Services.Lobbies.Models;
 
 public class LobbyItem : MonoBehaviour
 {
-    private LobbyManagerScript lobbyManagerScript;
+    private lobbylists manager;  // ✅ ตัวแปรถูกต้อง
     private Lobby lobby;
 
-    public Button joinButton; // 🎯 set ผ่าน Inspector
+    public Button joinButton;
 
-    public void Initialise(LobbyManagerScript manager, Lobby lobby)
+    public void Initialise(lobbylists manager, Lobby lobby)
     {
-        this.lobbyManagerScript = manager;
+        this.manager = manager;  // ✅ ใช้ชื่อให้ตรงกับตัวแปรจริง
         this.lobby = lobby;
 
         if (joinButton != null)
         {
             joinButton.onClick.RemoveAllListeners();
-            joinButton.onClick.AddListener(Join); // ✅ ผูกปุ่ม Join
+            joinButton.onClick.AddListener(Join);
         }
         else
         {
@@ -27,12 +27,12 @@ public class LobbyItem : MonoBehaviour
 
     public void Join()
     {
-        if (lobbyManagerScript == null || lobby == null)
+        if (manager == null || lobby == null)
         {
             Debug.LogError("❌ LobbyItem not initialized!");
             return;
         }
 
-        lobbyManagerScript.JoinAsync(lobby); // ✅ ส่งข้อมูลไป join
+        manager.JoinAsync(lobby); // ✅ เรียกผ่านตัวแปรที่ถูกต้อง
     }
 }

@@ -29,6 +29,7 @@ public class LoginManagerScipt : MonoBehaviour
     public string joinCode;
 
     public TMP_Text joinCodeDisplayText;
+    public bool StartGame = false;
 
     private void Awake()
     {
@@ -134,20 +135,19 @@ public class LoginManagerScipt : MonoBehaviour
 
     public async void Host()
     {
-        // setIpAddress();
         if (RelayManagerScript.Instance.IsRelayEnabled)
         {
             await RelayManagerScript.Instance.CreateRelay();
         }
 
-        // joinCodeDisplayText.gameObject.SetActive(true);
-        // joinCodeInputField.gameObject.SetActive(false);
         joinCodeDisplayText.gameObject.SetActive(false);
         joinCodeInputField.gameObject.SetActive(true);
 
         NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
+
+        // ✅ StartHost โดยยังไม่โหลดฉาก
         NetworkManager.Singleton.StartHost();
-        Debug.Log("Start Host");
+        Debug.Log("Start Host (รอเริ่มเกม...)");
     }
 
     public async void Client()
@@ -174,50 +174,56 @@ public class LoginManagerScipt : MonoBehaviour
 
     private void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
     {
-        // The client identifier to be authenticated
-        var clientId = request.ClientNetworkId;
-
-        // Additional connection data defined by user code
-        var connectionData = request.Payload;
-
-        int byteLength = connectionData.Length;
-        Debug.Log("byte length = " + byteLength);
-        bool isApproved = false;
-        if (byteLength > 0)
+        if (StartGame)
         {
-            string clientData = System.Text.Encoding.ASCII.GetString(connectionData, 0, byteLength);
-            string[] ClientDataAndCode = clientData.Split("/");
-            // int ColorSelect = int.Parse(ClientDataAndCode[2]);
-            int ColorSelect = int.Parse(ClientDataAndCode[1]);
-            string hostData = userNameInputField.GetComponent<TMP_InputField>().text;
-            // string CoderoomHost = CoderoomInputField.GetComponent<TMP_InputField>().text;
-            // isApproved = approveConnection(ClientDataAndCode, hostData, CoderoomHost);
-            isApproved = approveConnection(ClientDataAndCode, hostData);
-            response.PlayerPrefabHash = AlternatePlayerPrefebs[ColorSelect];
+            response.Approved = false;
+            return;
         }
-        else
-        {
-            if (NetworkManager.Singleton.IsHost)
+            // The client identifier to be authenticated
+            var clientId = request.ClientNetworkId;
+
+            // Additional connection data defined by user code
+            var connectionData = request.Payload;
+
+            int byteLength = connectionData.Length;
+            Debug.Log("byte length = " + byteLength);
+            bool isApproved = false;
+            if (byteLength > 0)
             {
-                response.PlayerPrefabHash = AlternatePlayerPrefebs[SelectColor()];
+                string clientData = System.Text.Encoding.ASCII.GetString(connectionData, 0, byteLength);
+                string[] ClientDataAndCode = clientData.Split("/");
+                // int ColorSelect = int.Parse(ClientDataAndCode[2]);
+                int ColorSelect = int.Parse(ClientDataAndCode[1]);
+                string hostData = userNameInputField.GetComponent<TMP_InputField>().text;
+                // string CoderoomHost = CoderoomInputField.GetComponent<TMP_InputField>().text;
+                // isApproved = approveConnection(ClientDataAndCode, hostData, CoderoomHost);
+                isApproved = approveConnection(ClientDataAndCode, hostData);
+                response.PlayerPrefabHash = AlternatePlayerPrefebs[ColorSelect];
             }
-        }
+            else
+            {
+                if (NetworkManager.Singleton.IsHost)
+                {
+                    response.PlayerPrefabHash = AlternatePlayerPrefebs[SelectColor()];
+                }
+            }
 
-        response.Approved = isApproved;
-        response.CreatePlayerObject = true;
-
-
-        response.Position = Vector3.zero;
-
-        response.Rotation = Quaternion.identity;
-        setSpawnLocation(clientId, response);
-        //NetworkLog.InfoServer("spawnPos of " + clientId + " is " + response.Position.ToString());
-
-        response.Reason = "Some reason for not approving the client";
+            response.Approved = isApproved;
+            response.CreatePlayerObject = true;
 
 
-        response.Pending = false;
-    }
+            response.Position = Vector3.zero;
+
+            response.Rotation = Quaternion.identity;
+            setSpawnLocation(clientId, response);
+            //NetworkLog.InfoServer("spawnPos of " + clientId + " is " + response.Position.ToString());
+
+            response.Reason = "Some reason for not approving the client";
+
+
+            response.Pending = false;
+     }
+    
 
     public bool approveConnection(string[] ClientDataAndCode, string hostData)
     {
