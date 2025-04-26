@@ -16,6 +16,8 @@ public class lobbylists : MonoBehaviour
     [SerializeField] private Transform lobbyItemParent;           // ✅ ใช้อันนี้แทน lobbiesContent
     [SerializeField] private GameObject lobbyItemPrefab;
 
+    public TMP_InputField joinNameInputField;
+
     private bool isRefreshing;
     private bool isJoining;
 
@@ -90,8 +92,9 @@ public class lobbylists : MonoBehaviour
         {
             Lobby joiningLobby = await Lobbies.Instance.JoinLobbyByIdAsync(lobby.Id);
             string joinCode = joiningLobby.Data["JoinCode"].Value;
+            string myName = joinNameInputField.text;
 
-            await ClientManager.Instance.StartClient(joinCode);
+            await ClientManager.Instance.StartClient(joinCode, myName);
         }
         catch (LobbyServiceException e)
         {

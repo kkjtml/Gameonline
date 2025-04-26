@@ -25,8 +25,15 @@ public class ClientManager : MonoBehaviour
         }
     }
 
-    public async Task StartClient(string joinCode)
+    public async Task StartClient(string joinCode, string playerName)
     {
+        // 📝 บันทึกชื่อก่อน Join จริงๆ
+        if (!string.IsNullOrWhiteSpace(playerName))
+        {
+            PlayerPrefs.SetString("PlayerName", playerName);
+            PlayerPrefs.Save();
+        }
+
         JoinAllocation allocation;
 
         try
@@ -44,7 +51,6 @@ public class ClientManager : MonoBehaviour
         Debug.Log($"client: {allocation.AllocationId}");
 
         var relayServerData = new RelayServerData(allocation, "dtls");
-
         NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
 
         NetworkManager.Singleton.StartClient();

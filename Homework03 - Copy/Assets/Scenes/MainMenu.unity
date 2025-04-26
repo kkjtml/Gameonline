@@ -2106,6 +2106,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lobbyItemParent: {fileID: 1172246689}
   lobbyItemPrefab: {fileID: 3978600429610513137, guid: b390f019181d0b943b22d2f71b791469, type: 3}
+  joinNameInputField: {fileID: 1625515681}
 --- !u!114 &598734358
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2119,6 +2120,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   joinCodeInputField: {fileID: 1483143181}
+  joinNameInputField: {fileID: 1625515681}
 --- !u!1 &617666979
 GameObject:
   m_ObjectHideFlags: 0

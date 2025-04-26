@@ -139,6 +139,16 @@ public class HostManager : MonoBehaviour
 
         ClientData = new Dictionary<ulong, ClientData>();
 
+        if (userNameInputField != null && !string.IsNullOrWhiteSpace(userNameInputField.text))
+        {
+            PlayerPrefs.SetString("PlayerName", userNameInputField.text);
+        }
+        else
+        {
+            PlayerPrefs.SetString("PlayerName", $"Player {UnityEngine.Random.Range(1000, 9999)}");
+        }
+        PlayerPrefs.Save();
+
         // 🚀 Start Host Server จริงๆ
         NetworkManager.Singleton.StartHost();
     }

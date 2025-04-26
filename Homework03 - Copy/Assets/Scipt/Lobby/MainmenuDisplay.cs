@@ -10,6 +10,7 @@ using UnityEngine;
 public class MainmenuDisplay : MonoBehaviour
 {
     [SerializeField] private TMP_InputField joinCodeInputField;
+    public TMP_InputField joinNameInputField;
 
     private async void Start()
     {
@@ -37,6 +38,7 @@ public class MainmenuDisplay : MonoBehaviour
     // Update is called once per frame
     public void StartClient()
     {
-        ClientManager.Instance.StartClient(joinCodeInputField.text);
+        string myname = joinNameInputField.text;
+        ClientManager.Instance.StartClient(joinCodeInputField.text, myname);
     }
 }
