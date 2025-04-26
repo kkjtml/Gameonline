@@ -2001,6 +2001,7 @@ GameObject:
   - component: {fileID: 598734354}
   - component: {fileID: 598734353}
   - component: {fileID: 598734357}
+  - component: {fileID: 598734358}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -2104,7 +2105,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lobbyItemParent: {fileID: 1172246689}
-  lobbyItemPrefab: {fileID: 0}
+  lobbyItemPrefab: {fileID: 3978600429610513137, guid: b390f019181d0b943b22d2f71b791469, type: 3}
+--- !u!114 &598734358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 598734352}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 910a4b224c1bdbf48b71db0a1402b864, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  joinCodeInputField: {fileID: 1483143181}
 --- !u!1 &617666979
 GameObject:
   m_ObjectHideFlags: 0
@@ -4046,7 +4060,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxConnections: 4
-  lobbySceneName: LobbyRoom
+  characterSelectSceneName: LobbyRoom
   gameplaySceneName: SampleScene
   userNameInputField: {fileID: 1625515681}
 --- !u!1 &1410096365
@@ -5139,9 +5153,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: LobbyManagerScript, Assembly-CSharp
-        m_MethodName: JoinLobbyByCode
+      - m_Target: {fileID: 598734358}
+        m_TargetAssemblyTypeName: MainmenuDisplay, Assembly-CSharp
+        m_MethodName: StartClient
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5506,6 +5520,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1719931377}
+  - component: {fileID: 1719931378}
   m_Layer: 0
   m_Name: ClientManager
   m_TagString: Untagged
@@ -5528,6 +5543,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1719931378
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719931376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85c0a9e1c02a5e54188eb627f5ffa328, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1744689563
 GameObject:
   m_ObjectHideFlags: 0

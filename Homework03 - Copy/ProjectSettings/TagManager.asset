@@ -9,6 +9,7 @@ TagManager:
   - Bomb
   - Playerr
   - Heart
+  - Content
   layers:
   - Default
   - TransparentFX

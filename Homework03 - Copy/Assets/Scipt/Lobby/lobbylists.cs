@@ -4,6 +4,11 @@ using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using TMPro;
 using QFSW.QC;
+using Unity.Services.Relay.Models;
+using Unity.Services.Relay;
+using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport.Relay;
+using Unity.Netcode;
 
 public class lobbylists : MonoBehaviour
 {
@@ -77,22 +82,34 @@ public class lobbylists : MonoBehaviour
 
     public async void JoinAsync(Lobby lobby)
     {
-        if (isJoining) return;
+        if (isJoining) { return; }
+
         isJoining = true;
 
         try
         {
             Lobby joiningLobby = await Lobbies.Instance.JoinLobbyByIdAsync(lobby.Id);
-
             string joinCode = joiningLobby.Data["JoinCode"].Value;
 
             await ClientManager.Instance.StartClient(joinCode);
         }
         catch (LobbyServiceException e)
         {
-            Debug.LogError($"❌ Join Lobby Failed: {e.Message}");
+            Debug.Log(e);
         }
 
         isJoining = false;
     }
+
+    private void HandleClientConnected(ulong clientId)
+    {
+        Debug.Log($"✅ Client connected! ID: {clientId}");
+
+        if (clientId == NetworkManager.Singleton.LocalClientId)
+        {
+            // ⭐ เมื่อเราตัวเอง connect สำเร็จ → เปลี่ยนซีน
+            UnityEngine.SceneManagement.SceneManager.LoadScene("LobbyRoom");
+        }
+    }
+
 }
