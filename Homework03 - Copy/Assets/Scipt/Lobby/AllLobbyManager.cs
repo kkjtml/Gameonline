@@ -3,6 +3,7 @@ using UnityEngine;
 using Unity.Netcode;
 using TMPro;
 using Unity.Collections;
+using UnityEngine.UI;
 
 public class AllLobbyManager : NetworkBehaviour
 {
@@ -10,6 +11,8 @@ public class AllLobbyManager : NetworkBehaviour
     public Transform contentParent;
     public GameObject playerEntryPrefab;
     public TMP_Text joinCodeText;
+    public TMP_Dropdown characterSelect;
+    public CharacterDatabase characterDatabase;
 
     private Dictionary<ulong, GameObject> playerEntries = new();
 
@@ -19,8 +22,11 @@ public class AllLobbyManager : NetworkBehaviour
     public GameObject StartButton;
     public GameObject ReadyButton;
 
+    private NetworkList<CharacterSelectState> players;
+
     private void Awake()
     {
+        players = new NetworkList<CharacterSelectState>();
         playerNames = new NetworkList<FixedString64Bytes>();
     }
 
@@ -97,4 +103,47 @@ public class AllLobbyManager : NetworkBehaviour
             playerNames.Dispose();
         }
     }
+
+    public void LockIn()
+    {
+        LockInServerRpc();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void LockInServerRpc(ServerRpcParams serverRpcParams = default)
+    {
+        ulong clientId = serverRpcParams.Receive.SenderClientId;
+        int selectedIndex = characterSelect.value;
+        int characterId = characterDatabase.GetAllCharacters()[selectedIndex].Id;
+
+        // เช็คก่อนว่ามีอยู่ใน list ไหม
+        bool found = false;
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i].ClientId == clientId)
+            {
+                // Update state
+                players[i] = new CharacterSelectState(clientId, characterId, true);
+                found = true;
+                break;
+            }
+        }
+
+        // ถ้ายังไม่เจอ client นี้ → เพิ่มใหม่
+        if (!found)
+        {
+            players.Add(new CharacterSelectState(clientId, characterId, true));
+        }
+
+        Debug.Log($"Client {clientId} Locked in with CharacterId {characterId}");
+
+        foreach (var player in players)
+        {
+            HostManager.Instance.SetCharacter(player.ClientId, player.CharacterId);
+        }
+
+        HostManager.Instance.StartGame();
+    }
+
 }

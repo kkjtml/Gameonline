@@ -281,9 +281,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: LobbyManagerScript, Assembly-CSharp
-        m_MethodName: CreateLobby
+      - m_Target: {fileID: 1498884821}
+        m_TargetAssemblyTypeName: AllLobbyManager, Assembly-CSharp
+        m_MethodName: LockIn
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -388,7 +388,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Moonlight
+  m_text: Girl
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1405,9 +1405,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: LobbyManagerScript, Assembly-CSharp
-        m_MethodName: CreateLobby
+      - m_Target: {fileID: 1498884821}
+        m_TargetAssemblyTypeName: AllLobbyManager, Assembly-CSharp
+        m_MethodName: PressReady
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2953,6 +2953,14 @@ PrefabInstance:
       propertyPath: contentParent
       value: 
       objectReference: {fileID: 1334499391}
+    - target: {fileID: 279216584569513768, guid: 07b46f7edbdcc36478e18c3a732f96c2, type: 3}
+      propertyPath: characterSelect
+      value: 
+      objectReference: {fileID: 1553761555}
+    - target: {fileID: 279216584569513768, guid: 07b46f7edbdcc36478e18c3a732f96c2, type: 3}
+      propertyPath: characterDatabase
+      value: 
+      objectReference: {fileID: 11400000, guid: 24e4ecb4f350bbb449d0df80e3ab6acf, type: 2}
     - target: {fileID: 862816353403171360, guid: 07b46f7edbdcc36478e18c3a732f96c2, type: 3}
       propertyPath: m_LocalPosition.x
       value: 972.4631
@@ -3010,6 +3018,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 07b46f7edbdcc36478e18c3a732f96c2, type: 3}
+--- !u!114 &1498884821 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 279216584569513768, guid: 07b46f7edbdcc36478e18c3a732f96c2, type: 3}
+  m_PrefabInstance: {fileID: 1498884820}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6261e80ff6580c44ca7d5bb11d1e807e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1515600780
 GameObject:
   m_ObjectHideFlags: 0
@@ -3353,12 +3372,6 @@ MonoBehaviour:
   m_Value: 0
   m_Options:
     m_Options:
-    - m_Text: Moonlight
-      m_Image: {fileID: 0}
-    - m_Text: Colorful
-      m_Image: {fileID: 0}
-    - m_Text: Rainbow
-      m_Image: {fileID: 0}
     - m_Text: Girl
       m_Image: {fileID: 0}
     - m_Text: Woman

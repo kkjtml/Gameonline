@@ -5,12 +5,17 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
+using Unity.Services.Lobbies;            // ✅ สำหรับ QueryLobbiesOptions, QueryFilter
+using Unity.Services.Lobbies.Models;     // ✅ สำหรับ Lobby
 using UnityEngine;
+using System.Collections.Generic;
 
 public class MainmenuDisplay : MonoBehaviour
 {
     [SerializeField] private TMP_InputField joinCodeInputField;
     public TMP_InputField joinNameInputField;
+
+    public lobbylists manager;
 
     private async void Start()
     {
@@ -41,4 +46,5 @@ public class MainmenuDisplay : MonoBehaviour
         string myname = joinNameInputField.text;
         ClientManager.Instance.StartClient(joinCodeInputField.text, myname);
     }
+
 }

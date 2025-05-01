@@ -2121,6 +2121,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   joinCodeInputField: {fileID: 1483143181}
   joinNameInputField: {fileID: 1625515681}
+  manager: {fileID: 598734357}
 --- !u!1 &617666979
 GameObject:
   m_ObjectHideFlags: 0
@@ -3331,9 +3332,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: LobbyManagerScript, Assembly-CSharp
-        m_MethodName: QuickJoinLobby
+      - m_Target: {fileID: 598734358}
+        m_TargetAssemblyTypeName: MainmenuDisplay, Assembly-CSharp
+        m_MethodName: QuickJoinClient
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
