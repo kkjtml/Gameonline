@@ -16,19 +16,12 @@ public class AllLobbyManager : NetworkBehaviour
 
     private Dictionary<ulong, GameObject> playerEntries = new();
 
-    // ✅ ประกาศ NetworkList
-    private NetworkList<FixedString64Bytes> playerNames;
 
     public GameObject StartButton;
     public GameObject ReadyButton;
 
-    private NetworkList<CharacterSelectState> players;
-
-    private void Awake()
-    {
-        players = new NetworkList<CharacterSelectState>();
-        playerNames = new NetworkList<FixedString64Bytes>();
-    }
+    private NetworkList<CharacterSelectState> players = new NetworkList<CharacterSelectState>();
+    private NetworkList<FixedString64Bytes> playerNames = new NetworkList<FixedString64Bytes>();
 
     private void Start()
     {
@@ -48,6 +41,7 @@ public class AllLobbyManager : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         playerNames.OnListChanged += OnPlayerListChanged;
+        players.OnListChanged += OnPlayersChanged;
 
         string myName = PlayerPrefs.GetString("PlayerName", $"Player {OwnerClientId}");
 
@@ -75,6 +69,11 @@ public class AllLobbyManager : NetworkBehaviour
         RefreshUI();
     }
 
+    private void OnPlayersChanged(NetworkListEvent<CharacterSelectState> changeEvent)
+    {
+        RefreshUI();    
+    }
+
     private void RefreshUI()
     {
         if (contentParent == null) return;
@@ -85,8 +84,20 @@ public class AllLobbyManager : NetworkBehaviour
         for (int i = 0; i < playerNames.Count; i++)
         {
             GameObject entry = Instantiate(playerEntryPrefab, contentParent);
-            string label = i == 0 ? "Player 1 (Host)" : $"Player {i + 1} (Not Ready)";
-            entry.GetComponentInChildren<TMP_Text>().text = label + ": " + playerNames[i].ToString();
+            string label = i == 0 ? "Player 1 (Host)" : $"Player {i + 1}";
+
+            bool isReady = false;
+            for (int j = 0; j < players.Count; j++)
+            {
+                if (players[j].ClientId == (ulong)i && players[j].IsLockedIn)
+                {
+                    isReady = true;
+                    break;
+                }
+            }
+
+            string readyText = isReady ? "(Ready)" : "(Not Ready)";
+            entry.GetComponentInChildren<TMP_Text>().text = label + " " + readyText + ": " + playerNames[i].ToString();
         }
     }
 
@@ -102,6 +113,13 @@ public class AllLobbyManager : NetworkBehaviour
         {
             playerNames.Dispose();
         }
+    }
+
+    public void Ready()
+    {
+        int selectedIndex = characterSelect.value;
+        int characterId = characterDatabase.GetAllCharacters()[selectedIndex].Id;
+        SendReadyServerRpc(characterId);
     }
 
     public void LockIn()
@@ -145,5 +163,37 @@ public class AllLobbyManager : NetworkBehaviour
 
         HostManager.Instance.StartGame();
     }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SendReadyServerRpc(int characterId, ServerRpcParams serverRpcParams = default)
+    {
+        ulong clientId = serverRpcParams.Receive.SenderClientId;
+
+        // หา player ใน list
+        bool found = false;
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i].ClientId == clientId)
+            {
+                // Update state: เปลี่ยนเป็น Ready
+                players[i] = new CharacterSelectState(clientId, characterId, true);
+                found = true;
+                break;
+            }
+        }
+
+        // ถ้าไม่มี player นี้ใน list → เพิ่มใหม่
+        if (!found)
+        {
+            players.Add(new CharacterSelectState(clientId, characterId, true));
+        }
+
+        Debug.Log($"Client {clientId} Ready with CharacterId {characterId}");
+
+        // อัพเดตให้ HostManager จำค่าไว้ด้วย
+        HostManager.Instance.SetCharacter(clientId, characterId);
+        RefreshUI();
+    }
+
 
 }

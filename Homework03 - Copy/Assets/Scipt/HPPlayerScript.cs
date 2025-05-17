@@ -7,8 +7,8 @@ using UnityEngine.SocialPlatforms.Impl;
 
 public class HPPlayerScript : NetworkBehaviour
 {
-    TMP_Text p1Text;
-    TMP_Text p2Text;
+    public TMP_Text p1Text;
+    public TMP_Text p2Text;
     MainPlayerMovement mainPlayer;
     public NetworkVariable<int> hpP1 = new NetworkVariable<int>(5,
     NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
